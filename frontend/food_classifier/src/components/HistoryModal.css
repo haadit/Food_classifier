@@ -1,0 +1,21 @@
+.history-overlay { position: fixed; inset: 0; background: rgba(2,6,23,.55); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 2000; }
+.history-modal { width: 100%; max-width: 900px; background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,.18); overflow: hidden; }
+.history-header { display:flex; align-items:center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #e2e8f0; }
+.history-title { margin:0; font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+.history-actions { display:flex; gap:.5rem; }
+.close-btn, .clear-btn { display:flex; align-items:center; gap:.4rem; padding:.5rem .75rem; border-radius: 8px; border:1px solid #e2e8f0; background:#f8fafc; color:#334155; cursor:pointer; }
+.close-btn:hover, .clear-btn:hover { background:#edf2f7; }
+.history-empty { padding: 2rem; text-align:center; color:#64748b; display:flex; flex-direction:column; gap:.5rem; align-items:center; }
+.history-grid { padding: 1rem; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.history-card { border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:#fff; }
+.thumb-wrap { width:100%; aspect-ratio: 1 / 1; background:#f1f5f9; display:flex; align-items:center; justify-content:center; }
+.thumb-wrap img { width:100%; height:100%; object-fit: cover; }
+.thumb-fallback { width:100%; height:100%; background: repeating-linear-gradient(45deg,#e2e8f0,#e2e8f0 10px,#f1f5f9 10px,#f1f5f9 20px); }
+.meta { display:flex; align-items:center; justify-content: space-between; padding:.5rem .75rem; }
+.badge { padding:.25rem .5rem; border-radius: 999px; font-size:.8rem; font-weight:700; text-transform: capitalize; }
+.badge.fresh { background:#dcfce7; color:#166534; }
+.badge.rotten { background:#fee2e2; color:#991b1b; }
+.conf { font-weight:700; color:#0f172a; }
+.row { display:flex; align-items:center; gap:.5rem; padding:0 .75rem 0.75rem; color:#475569; font-size:.9rem; }
+
+

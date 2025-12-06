@@ -1,0 +1,10 @@
+[build]
+  base = "frontend/food_classifier"
+  command = "npm install && npm run build"
+  publish = "frontend/food_classifier/dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+

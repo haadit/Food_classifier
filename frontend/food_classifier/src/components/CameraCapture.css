@@ -1,0 +1,10 @@
+.cam-overlay { position: fixed; inset:0; background: rgba(2,6,23,.6); backdrop-filter: blur(6px); display:flex; align-items:center; justify-content:center; z-index: 3000; }
+.cam-modal { width: 96%; max-width: 720px; background:#0b1220; border-radius:16px; overflow:hidden; border:1px solid #1f2937; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+.cam-header { display:flex; justify-content:flex-end; padding:.5rem; }
+.cam-close { background:#111827; color:#e5e7eb; border:1px solid #374151; border-radius:8px; padding:.4rem .6rem; cursor:pointer; }
+.cam-body { background:#000; }
+.cam-video { width:100%; height:auto; display:block; }
+.cam-actions { display:flex; justify-content:center; padding: .75rem; background:#0b1220; }
+.cam-shutter { display:inline-flex; align-items:center; gap:.5rem; padding:.6rem 1rem; background:#22c55e; color:#052e16; border:none; border-radius:999px; font-weight:800; cursor:pointer; }
+.cam-shutter:hover { filter: brightness(0.98); }
+
