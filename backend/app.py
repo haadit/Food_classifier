@@ -186,9 +186,20 @@ def predict():
 		print(f"Received prediction request for file: {file.filename}", file=sys.stderr)
 		img_arr = preprocess_image(file)
 		print(f"Image preprocessed, shape: {img_arr.shape}", file=sys.stderr)
-		preds = MODEL.predict(img_arr, verbose=0)
-		pred = preds[0]
-		print(f"Prediction completed, shape: {pred.shape}", file=sys.stderr)
+		print("Starting MODEL.predict()... This may take 5-15 seconds on CPU...", file=sys.stderr)
+		import time
+		predict_start = time.time()
+		try:
+			preds = MODEL.predict(img_arr, verbose=1)
+			predict_time = time.time() - predict_start
+			print(f"MODEL.predict() completed in {predict_time:.2f} seconds", file=sys.stderr)
+			pred = preds[0]
+			print(f"Prediction completed, shape: {pred.shape}", file=sys.stderr)
+		except Exception as predict_error:
+			predict_time = time.time() - predict_start
+			print(f"ERROR in MODEL.predict() after {predict_time:.2f} seconds: {predict_error}", file=sys.stderr)
+			print(traceback.format_exc(), file=sys.stderr)
+			raise
 
 		# Ensure outputs are calibrated probabilities (apply softmax if needed)
 		try:
