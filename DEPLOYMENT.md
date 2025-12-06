@@ -39,14 +39,18 @@ This guide will help you deploy your food classifier application for free using:
    - Configure:
      - **Name**: `food-classifier-api`
      - **Environment**: `Python 3`
-     - **Build Command**: `pip install -r backend/requirements.txt`
-     - **Start Command**: `cd backend && gunicorn app:APP --bind 0.0.0.0:$PORT`
+     - **Python Version**: `3.11.9` (IMPORTANT: TensorFlow requires Python 3.8-3.11)
+     - **Build Command**: `pip install --upgrade pip && pip install -r backend/requirements.txt`
+     - **Start Command**: `cd backend && gunicorn app:APP --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
      - **Root Directory**: Leave empty (or set to project root)
    - Add Environment Variables:
      - `PORT`: `10000` (Render will override this)
+     - `PYTHON_VERSION`: `3.11.9` (ensures correct Python version)
    - Click "Create Web Service"
    - Wait for deployment (5-10 minutes)
    - Copy your service URL (e.g., `https://food-classifier-api.onrender.com`)
+   
+   **Note:** If you see Python version errors, make sure `PYTHON_VERSION=3.11.9` is set in environment variables. The `runtime.txt` file should also specify `python-3.11.9`.
 
 ### Option B: Deploy to Railway
 
