@@ -9,6 +9,11 @@ from PIL import Image
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
+
+# Configure TensorFlow for single-threaded inference (better for Gunicorn)
+tf.config.threading.set_inter_op_parallelism_threads(1)
+tf.config.threading.set_intra_op_parallelism_threads(1)
+
 from tensorflow.keras.applications import efficientnet, resnet50, mobilenet_v2
 
 APP = Flask(__name__)
