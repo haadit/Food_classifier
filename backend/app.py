@@ -44,11 +44,19 @@ def _select_preprocess_fn(model):
 
 def init_model():
 	global MODEL, CLASS_NAMES, PREPROCESS_FN
-	MODEL, CLASS_NAMES = _load_model()
-	PREPROCESS_FN = _select_preprocess_fn(MODEL)
+	try:
+		print("Loading model...")
+		MODEL, CLASS_NAMES = _load_model()
+		PREPROCESS_FN = _select_preprocess_fn(MODEL)
+		print(f"Model loaded successfully! Classes: {len(CLASS_NAMES)}")
+	except Exception as e:
+		print(f"Error loading model: {e}")
+		MODEL, CLASS_NAMES, PREPROCESS_FN = None, None, None
 
-# Initialize model on startup
-init_model()
+# Initialize model on startup (non-blocking for Render health checks)
+import threading
+model_loading_thread = threading.Thread(target=init_model, daemon=True)
+model_loading_thread.start()
 
 
 def preprocess_image(file_storage) -> np.ndarray:
@@ -60,9 +68,17 @@ def preprocess_image(file_storage) -> np.ndarray:
 	return arr
 
 
+@APP.route("/", methods=["GET"])
+def root():
+	return jsonify({"status": "ok", "service": "food-classifier-api"})
+
 @APP.route("/health", methods=["GET"])
 def health():
-	return jsonify({"status": "ok", "model_loaded": MODEL is not None, "num_classes": len(CLASS_NAMES) if CLASS_NAMES else 0})
+	return jsonify({
+		"status": "ok", 
+		"model_loaded": MODEL is not None, 
+		"num_classes": len(CLASS_NAMES) if CLASS_NAMES else 0
+	})
 
 
 @APP.route("/predict", methods=["POST"])
