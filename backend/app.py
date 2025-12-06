@@ -101,10 +101,23 @@ def init_model():
 		print("=" * 50, file=sys.stderr)
 		MODEL, CLASS_NAMES, PREPROCESS_FN = None, None, None
 
-# Initialize model on startup (non-blocking for Render health checks)
-import threading
-model_loading_thread = threading.Thread(target=init_model, daemon=True)
-model_loading_thread.start()
+# Initialize model on startup
+# Check if we're running with Gunicorn (production) or directly (development)
+# With --preload, we need to load synchronously before workers fork
+# Without preload, we can load in background for faster startup
+import os
+is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "").lower() or os.environ.get("GUNICORN_CMD_ARGS") is not None
+
+if is_gunicorn:
+	# Production: Load synchronously (works with --preload)
+	print("Running with Gunicorn, loading model synchronously...", file=sys.stderr)
+	init_model()
+else:
+	# Development: Load in background for faster startup
+	print("Running in development mode, loading model in background...", file=sys.stderr)
+	import threading
+	model_loading_thread = threading.Thread(target=init_model, daemon=True)
+	model_loading_thread.start()
 
 
 def preprocess_image(file_storage) -> np.ndarray:
