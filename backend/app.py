@@ -1,5 +1,7 @@
 import os
 import json
+import sys
+import traceback
 from io import BytesIO
 
 import numpy as np
@@ -20,10 +22,33 @@ IMAGE_SIZE = (224, 224)
 
 # Load model and classes
 def _load_model():
+	# Check if model files exist
+	print(f"MODELS_DIR: {MODELS_DIR}")
+	print(f"Checking for KERAS_MODEL: {KERAS_MODEL} - Exists: {os.path.exists(KERAS_MODEL)}")
+	print(f"Checking for H5_MODEL: {H5_MODEL} - Exists: {os.path.exists(H5_MODEL)}")
+	print(f"Checking for CLASS_NAMES_PATH: {CLASS_NAMES_PATH} - Exists: {os.path.exists(CLASS_NAMES_PATH)}")
+	
+	# List all files in models directory
+	if os.path.exists(MODELS_DIR):
+		print(f"Files in models directory: {os.listdir(MODELS_DIR)}")
+	else:
+		print(f"ERROR: Models directory does not exist: {MODELS_DIR}")
+		raise FileNotFoundError(f"Models directory not found: {MODELS_DIR}")
+	
 	model_path = KERAS_MODEL if os.path.exists(KERAS_MODEL) else H5_MODEL
+	if not os.path.exists(model_path):
+		raise FileNotFoundError(f"Model file not found. Checked: {KERAS_MODEL} and {H5_MODEL}")
+	
+	if not os.path.exists(CLASS_NAMES_PATH):
+		raise FileNotFoundError(f"Class names file not found: {CLASS_NAMES_PATH}")
+	
+	print(f"Loading model from: {model_path}")
 	model = tf.keras.models.load_model(model_path)
+	print("Model loaded from file successfully")
+	
 	with open(os.path.abspath(CLASS_NAMES_PATH), "r", encoding="utf-8") as f:
 		class_names = json.load(f)["class_names"]
+	print(f"Loaded {len(class_names)} class names")
 	return model, class_names
 
 MODEL, CLASS_NAMES = None, None
@@ -45,12 +70,19 @@ def _select_preprocess_fn(model):
 def init_model():
 	global MODEL, CLASS_NAMES, PREPROCESS_FN
 	try:
-		print("Loading model...")
+		print("=" * 50, file=sys.stderr)
+		print("Loading model...", file=sys.stderr)
+		print("=" * 50, file=sys.stderr)
 		MODEL, CLASS_NAMES = _load_model()
 		PREPROCESS_FN = _select_preprocess_fn(MODEL)
-		print(f"Model loaded successfully! Classes: {len(CLASS_NAMES)}")
+		print("=" * 50, file=sys.stderr)
+		print(f"Model loaded successfully! Classes: {len(CLASS_NAMES)}", file=sys.stderr)
+		print("=" * 50, file=sys.stderr)
 	except Exception as e:
-		print(f"Error loading model: {e}")
+		print("=" * 50, file=sys.stderr)
+		print(f"ERROR loading model: {e}", file=sys.stderr)
+		print(traceback.format_exc(), file=sys.stderr)
+		print("=" * 50, file=sys.stderr)
 		MODEL, CLASS_NAMES, PREPROCESS_FN = None, None, None
 
 # Initialize model on startup (non-blocking for Render health checks)
@@ -60,6 +92,8 @@ model_loading_thread.start()
 
 
 def preprocess_image(file_storage) -> np.ndarray:
+	if PREPROCESS_FN is None:
+		raise ValueError("Preprocess function not initialized. Model may not be loaded.")
 	img = Image.open(file_storage.stream).convert("RGB").resize(IMAGE_SIZE)
 	arr = np.array(img).astype("float32")
 	# Apply backbone-specific preprocessing
@@ -74,10 +108,16 @@ def root():
 
 @APP.route("/health", methods=["GET"])
 def health():
+	model_status = "loaded" if MODEL is not None else "loading" if model_loading_thread.is_alive() else "failed"
 	return jsonify({
 		"status": "ok", 
-		"model_loaded": MODEL is not None, 
-		"num_classes": len(CLASS_NAMES) if CLASS_NAMES else 0
+		"model_loaded": MODEL is not None,
+		"model_status": model_status,
+		"num_classes": len(CLASS_NAMES) if CLASS_NAMES else 0,
+		"models_dir": MODELS_DIR,
+		"keras_model_exists": os.path.exists(KERAS_MODEL),
+		"h5_model_exists": os.path.exists(H5_MODEL),
+		"class_names_exists": os.path.exists(CLASS_NAMES_PATH)
 	})
 
 
