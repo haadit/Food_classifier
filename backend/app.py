@@ -149,34 +149,53 @@ def health():
 
 @APP.route("/predict", methods=["POST"])
 def predict():
-	if MODEL is None:
-		return jsonify({"error": "Model not loaded"}), 500
-	if "file" not in request.files:
-		return jsonify({"error": "No file uploaded under key 'file'"}), 400
-	file = request.files["file"]
-	img_arr = preprocess_image(file)
-	preds = MODEL.predict(img_arr, verbose=0)
-	pred = preds[0]
-
-	# Ensure outputs are calibrated probabilities (apply softmax if needed)
 	try:
-		# If the model already has softmax, this will be a no-op (sum ~ 1.0)
-		probs = pred
-		total = float(np.sum(probs))
-		if not np.isfinite(total) or total <= 0.0 or abs(total - 1.0) > 1e-3:
-			probs = tf.nn.softmax(pred).numpy()
-	except Exception:
-		# Fallback to numpy softmax
-		exp = np.exp(pred - np.max(pred))
-		probs = exp / np.sum(exp)
-	
-	idx = int(np.argmax(probs))
-	result = {
-		"class": CLASS_NAMES[idx],
-		"confidence": float(probs[idx]),
-		"all_confidences": {CLASS_NAMES[i]: float(probs[i]) for i in range(len(CLASS_NAMES))},
-	}
-	return jsonify(result)
+		if MODEL is None:
+			print("ERROR: MODEL is None", file=sys.stderr)
+			return jsonify({"error": "Model not loaded"}), 500
+		if PREPROCESS_FN is None:
+			print("ERROR: PREPROCESS_FN is None", file=sys.stderr)
+			return jsonify({"error": "Preprocess function not initialized"}), 500
+		if "file" not in request.files:
+			return jsonify({"error": "No file uploaded under key 'file'"}), 400
+		file = request.files["file"]
+		if file.filename == '':
+			return jsonify({"error": "No file selected"}), 400
+		
+		print(f"Received prediction request for file: {file.filename}", file=sys.stderr)
+		img_arr = preprocess_image(file)
+		print(f"Image preprocessed, shape: {img_arr.shape}", file=sys.stderr)
+		preds = MODEL.predict(img_arr, verbose=0)
+		pred = preds[0]
+		print(f"Prediction completed, shape: {pred.shape}", file=sys.stderr)
+
+		# Ensure outputs are calibrated probabilities (apply softmax if needed)
+		try:
+			# If the model already has softmax, this will be a no-op (sum ~ 1.0)
+			probs = pred
+			total = float(np.sum(probs))
+			if not np.isfinite(total) or total <= 0.0 or abs(total - 1.0) > 1e-3:
+				probs = tf.nn.softmax(pred).numpy()
+		except Exception as softmax_error:
+			print(f"Softmax error, using numpy fallback: {softmax_error}", file=sys.stderr)
+			# Fallback to numpy softmax
+			exp = np.exp(pred - np.max(pred))
+			probs = exp / np.sum(exp)
+		
+		idx = int(np.argmax(probs))
+		result = {
+			"class": CLASS_NAMES[idx],
+			"confidence": float(probs[idx]),
+			"all_confidences": {CLASS_NAMES[i]: float(probs[i]) for i in range(len(CLASS_NAMES))},
+		}
+		print(f"Prediction result: {result['class']} ({result['confidence']:.4f})", file=sys.stderr)
+		return jsonify(result)
+	except Exception as e:
+		print("=" * 50, file=sys.stderr)
+		print(f"ERROR in /predict endpoint: {e}", file=sys.stderr)
+		print(traceback.format_exc(), file=sys.stderr)
+		print("=" * 50, file=sys.stderr)
+		return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
