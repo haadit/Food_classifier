@@ -9,6 +9,11 @@ backend/tfenv/
 .env
 .env.*
 
+# Model files (large - use Git LFS or download on deployment)
+# Uncomment if you want to exclude models from Git:
+# models/*.keras
+# models/*.h5
+# Keep class_names.json tracked as it's small
 
 # Logs
 *.log
@@ -17,3 +22,7 @@ backend/tfenv/
 frontend/**/node_modules/
 frontend/**/build/
 frontend/**/.env*
+
+# Data directories (too large for Git)
+data/
+outputs/
