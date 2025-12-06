@@ -139,8 +139,16 @@ def root():
 def health():
 	if MODEL is not None:
 		model_status = "loaded"
-	elif MODEL_LOADING_STARTED and model_loading_thread.is_alive():
-		model_status = "loading"
+	elif MODEL_LOADING_STARTED:
+		# Check if thread exists and is alive (development mode)
+		if 'model_loading_thread' in globals() and hasattr(model_loading_thread, 'is_alive'):
+			if model_loading_thread.is_alive():
+				model_status = "loading"
+			else:
+				model_status = "failed" if MODEL_LOADING_ERROR else "unknown"
+		else:
+			# Gunicorn mode - loading happens synchronously
+			model_status = "loading" if MODEL is None else "loaded"
 	elif MODEL_LOADING_ERROR:
 		model_status = f"failed: {MODEL_LOADING_ERROR[:100]}"
 	else:
@@ -156,7 +164,7 @@ def health():
 		"h5_model_exists": os.path.exists(H5_MODEL),
 		"class_names_exists": os.path.exists(CLASS_NAMES_PATH),
 		"model_loading_started": MODEL_LOADING_STARTED,
-		"thread_alive": model_loading_thread.is_alive() if 'model_loading_thread' in globals() else False
+		"is_gunicorn": is_gunicorn if 'is_gunicorn' in globals() else False
 	})
 
 
