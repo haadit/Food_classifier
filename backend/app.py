@@ -42,9 +42,11 @@ def _load_model():
 	if not os.path.exists(CLASS_NAMES_PATH):
 		raise FileNotFoundError(f"Class names file not found: {CLASS_NAMES_PATH}")
 	
-	print(f"Loading model from: {model_path}")
+	print(f"Loading model from: {model_path}", file=sys.stderr)
+	print(f"Model file size: {os.path.getsize(model_path) / (1024*1024):.2f} MB", file=sys.stderr)
+	print("Calling tf.keras.models.load_model()... This may take 30-60 seconds...", file=sys.stderr)
 	model = tf.keras.models.load_model(model_path)
-	print("Model loaded from file successfully")
+	print("Model loaded from file successfully", file=sys.stderr)
 	
 	with open(os.path.abspath(CLASS_NAMES_PATH), "r", encoding="utf-8") as f:
 		class_names = json.load(f)["class_names"]
@@ -53,6 +55,8 @@ def _load_model():
 
 MODEL, CLASS_NAMES = None, None
 PREPROCESS_FN = None
+MODEL_LOADING_STARTED = False
+MODEL_LOADING_ERROR = None
 
 def _select_preprocess_fn(model):
 	"""Select a suitable preprocess_input based on backbone present in the model."""
@@ -68,7 +72,9 @@ def _select_preprocess_fn(model):
 
 
 def init_model():
-	global MODEL, CLASS_NAMES, PREPROCESS_FN
+	global MODEL, CLASS_NAMES, PREPROCESS_FN, MODEL_LOADING_STARTED, MODEL_LOADING_ERROR
+	MODEL_LOADING_STARTED = True
+	MODEL_LOADING_ERROR = None
 	try:
 		print("=" * 50, file=sys.stderr)
 		print("Loading model...", file=sys.stderr)
@@ -79,6 +85,7 @@ def init_model():
 		print(f"Model loaded successfully! Classes: {len(CLASS_NAMES)}", file=sys.stderr)
 		print("=" * 50, file=sys.stderr)
 	except Exception as e:
+		MODEL_LOADING_ERROR = str(e)
 		print("=" * 50, file=sys.stderr)
 		print(f"ERROR loading model: {e}", file=sys.stderr)
 		print(traceback.format_exc(), file=sys.stderr)
@@ -108,7 +115,15 @@ def root():
 
 @APP.route("/health", methods=["GET"])
 def health():
-	model_status = "loaded" if MODEL is not None else "loading" if model_loading_thread.is_alive() else "failed"
+	if MODEL is not None:
+		model_status = "loaded"
+	elif MODEL_LOADING_STARTED and model_loading_thread.is_alive():
+		model_status = "loading"
+	elif MODEL_LOADING_ERROR:
+		model_status = f"failed: {MODEL_LOADING_ERROR[:100]}"
+	else:
+		model_status = "not_started"
+	
 	return jsonify({
 		"status": "ok", 
 		"model_loaded": MODEL is not None,
@@ -117,7 +132,9 @@ def health():
 		"models_dir": MODELS_DIR,
 		"keras_model_exists": os.path.exists(KERAS_MODEL),
 		"h5_model_exists": os.path.exists(H5_MODEL),
-		"class_names_exists": os.path.exists(CLASS_NAMES_PATH)
+		"class_names_exists": os.path.exists(CLASS_NAMES_PATH),
+		"model_loading_started": MODEL_LOADING_STARTED,
+		"thread_alive": model_loading_thread.is_alive() if 'model_loading_thread' in globals() else False
 	})
 
 
