@@ -45,8 +45,17 @@ def _load_model():
 	print(f"Loading model from: {model_path}", file=sys.stderr)
 	print(f"Model file size: {os.path.getsize(model_path) / (1024*1024):.2f} MB", file=sys.stderr)
 	print("Calling tf.keras.models.load_model()... This may take 30-60 seconds...", file=sys.stderr)
-	model = tf.keras.models.load_model(model_path)
-	print("Model loaded from file successfully", file=sys.stderr)
+	print("Starting model load at:", file=sys.stderr)
+	import time
+	start_time = time.time()
+	try:
+		model = tf.keras.models.load_model(model_path, compile=False)
+		load_time = time.time() - start_time
+		print(f"Model loaded from file successfully in {load_time:.2f} seconds", file=sys.stderr)
+	except Exception as load_error:
+		print(f"ERROR during tf.keras.models.load_model(): {load_error}", file=sys.stderr)
+		print(traceback.format_exc(), file=sys.stderr)
+		raise
 	
 	with open(os.path.abspath(CLASS_NAMES_PATH), "r", encoding="utf-8") as f:
 		class_names = json.load(f)["class_names"]
